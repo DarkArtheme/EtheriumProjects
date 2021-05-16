@@ -6,7 +6,7 @@ import "truffle/DeployedAddresses.sol"; /*библиотека, хранящая
                                         передеплоим контракт, мы можем узнать его новый адрес здесь)*/
 import "../contracts/Bank.sol";
 
-contract TestBank_partOne {
+contract TestBank {
     Bank public bank;
     Gachi public token;
 
@@ -53,6 +53,25 @@ contract TestBank_partOne {
         Assert.isTrue(bank.checkClient(clients[0], "log", "pass"), "Checking error");
         Assert.isFalse(bank.checkClient(clients[0], "wronglog", "pass"), "Checking error");
     }
+
+    function testReturningCredit() public {
+        uint256 old_storage = bank.getStorage();        
+        bank.register("log", "pass", 100);
+        token.setAllowance(address(this), address(bank), 25);
+        bank.takeCredit("log", "pass", 20, 5);
+        bank.returnCredit(20);
+        Bank.Client[] memory clients = bank.getClients();        
+        Assert.equal(clients[0].balance, 100, "Client's balance wasn't changed correctly");
+        Assert.equal(clients[0].credit.totalSum, 5, "Credit TotalSum wasn't changed correctly");        
+        Assert.equal(bank.getStorage(), old_storage, "Storage wasn't changed correctly");
+
+        bank.returnCredit(5);
+        clients = bank.getClients(); 
+        Assert.isZero(clients[0].credit.totalSum, "TotalSum should be zero");
+        Assert.equal(clients[0].balance, 95, "Client's balance wasn't changed correctly");
+        Assert.equal(bank.getStorage(), old_storage + 5, "Storage wasn't changed correctly");        
+    }
+    
 }
 
  
